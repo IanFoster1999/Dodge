@@ -9,12 +9,20 @@ public class PlayerController : MonoBehaviour {
     public float speed;
     public bool enable = false;
 
+    public Transform deathParticle;
+
     public GameObject[] barriers;
     public Vector2 lastBarrier;
 
     public int scoreToAdd = 1;
     private ScoreManager scoreManager;
     public Text instuction;
+
+
+    public GameObject nextBarrier;
+    public Material playerTrail;
+    public Color[] colors;
+    public Color currentColor, nextColor, tempColor;
 
     void Start ()
     { 
@@ -26,10 +34,16 @@ public class PlayerController : MonoBehaviour {
 
 	void Update ()
     {
+        //TEMP
+        if (Input.GetKey(KeyCode.Space))
+            enable = true;
 
         if (enable == true)
         {
             Vector2 rotTarget = this.transform.position;
+
+            //TEMP
+            //rotTarget = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
             if(Input.touchCount > 0)
             {
@@ -64,11 +78,26 @@ public class PlayerController : MonoBehaviour {
     void Death()
     {
         Destroy(this.gameObject);
-        Initiate.Fade("Test", Color.black, 2.0f);
+        Instantiate(deathParticle, this.transform.position, Quaternion.identity);
+        
+        Initiate.Fade("Test", Color.black, 1.0f);
     }
 
+    void FirstGoal()
+    {
+        
+        speed = speed + (speed * 0.05f);
+
+        scoreManager.scoreCount += scoreToAdd;
+
+        SpawnBarrier();
+    }
     void Goal()
     {
+        currentColor = tempColor;
+        this.GetComponent<SpriteRenderer>().color = currentColor;
+        this.GetComponent<TrailRenderer>().material.SetColor("_TintColor", currentColor);// = Color.Lerp(this.GetComponent<TrailRenderer>().material.color, currentColor, 0.2f);
+        
         speed = speed + (speed * 0.05f);
 
         scoreManager.scoreCount += scoreToAdd;
@@ -78,12 +107,29 @@ public class PlayerController : MonoBehaviour {
 
     void SpawnBarrier()
     {
+       
         lastBarrier = new Vector2(Random.Range(-1.75f, 1.75f), lastBarrier.y += 5);
-        Instantiate(barriers[Random.Range(0, barriers.Length)], lastBarrier, Quaternion.identity);
+        nextBarrier = Instantiate(barriers[Random.Range(0, barriers.Length)], lastBarrier, Quaternion.identity);
+
+        tempColor = nextColor;
+        nextColor = colors[Random.Range(0, colors.Length)];
+
+        foreach (SpriteRenderer spriteRend in nextBarrier.GetComponentsInChildren<SpriteRenderer>())
+        {
+            spriteRend.GetComponent<SpriteRenderer>().color = nextColor;
+        }
+        
     }
+
+
 
     private void OnTriggerEnter2D(Collider2D other)
     {
+        if (other.tag == "First Goal")
+        {
+            FirstGoal();
+        }
+
         if (other.tag == "Goal")
         {
             Goal();
